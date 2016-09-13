@@ -9,7 +9,7 @@ RoboClaw::RoboClaw(unsigned char addr, int baud_rate) {
 }
 
 // Deconstructor
-RoboClaw::~RoboClaw(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+RoboClaw::~RoboClaw() {
 }
 
 // Init
