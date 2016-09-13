@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <termios.h>
 
+// RoboClaw
 class RoboClaw : public Nan::ObjectWrap {
  public:
   static void Init(v8::Local<v8::Object> exports);
@@ -28,10 +29,10 @@ class RoboClaw : public Nan::ObjectWrap {
   bool rc_read(int device, unsigned char* buf, int length);
   int convertIntegerToBytes(int value, unsigned char* buf, int offset = 0);
 
-  int               _drive_controller_device;
-  unsigned char     _drive_controller_address;
-  const char*       _drive_controller_path;
-  int               _baud_rate;
+  int               _roboclaw_device;
+  unsigned char     _roboclaw_address;
+  const char*       _roboclaw_path;
+  int               _roboclaw_baud_rate;
 };
 
 #endif

@@ -4,12 +4,12 @@ Nan::Persistent<v8::Function> RoboClaw::constructor;
 
 // Constructor
 RoboClaw::RoboClaw(unsigned char addr, int baud_rate) {
-    _drive_controller_address = addr;
-    _baud_rate = baud_rate;
+    _roboclaw_address = addr;
+    _roboclaw_baud_rate = baud_rate;
 }
 
 // Deconstructor
-RoboClaw::~RoboClaw() {
+RoboClaw::~RoboClaw(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 }
 
 // Init
@@ -36,7 +36,7 @@ void RoboClaw::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     RoboClaw* rc = new RoboClaw();
     rc->Wrap(info.This());
     // set roboclaw board address; or use default: 0x80
-    rc->_drive_controller_address = info[0]->IsUndefined() ? rc->_drive_controller_address : (unsigned char)(info[0]->NumberValue());
+    rc->_roboclaw_address = info[0]->IsUndefined() ? rc->_roboclaw_address : (unsigned char)(info[0]->NumberValue());
 
     info.GetReturnValue().Set(info.This());
   } else {
@@ -51,32 +51,29 @@ void RoboClaw::New(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 // Connect
 void RoboClaw::Connect(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   RoboClaw* rc = ObjectWrap::Unwrap<RoboClaw>(info.Holder());
-  // device path:
-  //  - Mac: '/dev/tty.usbmodem1411'
-  //  - Linux: '/dev/ttyACM0'
   v8::String::Utf8Value device_path(info[0]->ToString());
-  rc->_drive_controller_path = (const char*)(*device_path);
+  rc->_roboclaw_path = (const char*)(*device_path);
   // drive control communication configuration
-  printf("\nRoboClaw Virtual COM port: %s", rc->_drive_controller_path);
-  printf("\nRoboClaw Bus address: %i", rc->_drive_controller_address);
+  printf("\nRoboClaw Virtual COM port: %s", rc->_roboclaw_path);
+  printf("\nRoboClaw Bus address: %i", rc->_roboclaw_address);
   printf("\nConnecting to RoboClaw board...");
-  rc->_drive_controller_device = open(rc->_drive_controller_path, O_RDWR | O_NOCTTY | O_NDELAY);
-  if (rc->_drive_controller_device == -1)
+  rc->_roboclaw_device = open(rc->_roboclaw_path, O_RDWR | O_NOCTTY | O_NDELAY);
+  if (rc->_roboclaw_device == -1)
   {
     printf("\nFailed to connect!");
-    perror(rc->_drive_controller_path);
+    perror(rc->_roboclaw_path);
     info.GetReturnValue().Set(false);
     return;
   }
   printf("\nConnected!\n");
   struct termios options;
-  tcgetattr(rc->_drive_controller_device, &options);
-  options.c_cflag = rc->_baud_rate | CS8 | CLOCAL | CREAD;   //<Set baud rate
+  tcgetattr(rc->_roboclaw_device, &options);
+  options.c_cflag = rc->_roboclaw_baud_rate | CS8 | CLOCAL | CREAD;   //<Set baud rate
   options.c_iflag = IGNPAR;
   options.c_oflag = 0;
   options.c_lflag = 0;
-  tcflush(rc->_drive_controller_device, TCIFLUSH);
-  tcsetattr(rc->_drive_controller_device, TCSANOW, &options);
+  tcflush(rc->_roboclaw_device, TCIFLUSH);
+  tcsetattr(rc->_roboclaw_device, TCSANOW, &options);
 
   info.GetReturnValue().Set(true);
 }
@@ -85,7 +82,7 @@ void RoboClaw::Connect(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 void RoboClaw::Disconnect(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   RoboClaw* rc = ObjectWrap::Unwrap<RoboClaw>(info.Holder());
 
-  close(rc->_drive_controller_device);
+  close(rc->_roboclaw_device);
 }
 
 // Calculates CRC16 checksum on nBytes of data
@@ -98,7 +95,6 @@ unsigned int RoboClaw::crc16(unsigned char *packet, int nBytes) {
     unsigned char bit;
 
     for (bit = 0; bit < 8; bit++) {
-
       if (crc & 0x8000) {
         crc = (crc << 1) ^ 0x1021;
       } else {
@@ -111,10 +107,10 @@ unsigned int RoboClaw::crc16(unsigned char *packet, int nBytes) {
 
 // convertIntegerToBytes
 int RoboClaw::convertIntegerToBytes(int value, unsigned char* buf, int offset) {
-  buf[offset]     = value>>24;
-  buf[offset + 1] = value>>16;
-  buf[offset + 2] = value>>8;
-  buf[offset + 3] = value;
+  buf[offset]   = value>>24;
+  buf[offset+1] = value>>16;
+  buf[offset+2] = value>>8;
+  buf[offset+3] = value;
 
   return offset + 4;
 }
@@ -183,7 +179,7 @@ void RoboClaw::Drive(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   // motor 2 speed
   next = rc->convertIntegerToBytes(SpeedM2, data, next);
   // write to roboclaw board
-  bool success = rc->rc_write(rc->_drive_controller_device, rc->_drive_controller_address, 37, data, sizeof(data));
+  bool success = rc->rc_write(rc->_roboclaw_device, rc->_roboclaw_address, 37, data, sizeof(data));
   // return command success status
   info.GetReturnValue().Set(success);
 }
