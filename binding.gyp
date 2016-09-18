@@ -3,8 +3,8 @@
     {
       "target_name": "roboclaw",
       "sources": [
-        "roboclaw.cc",
-        "roboclaw_motor_controller.cc"
+        "src/roboclaw.cc",
+        "src/roboclaw_motor_controller.cc"
       ],
       "include_dirs": [
         "<!(node -e \"require('nan')\")"

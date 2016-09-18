@@ -1,5 +1,5 @@
 // initialize motor controller with optional hex address; default is 0x80
-var roboclaw = require("./index").RoboClaw(0x80);
+var roboclaw = require("../index").RoboClaw(0x80);
 
 /*
   The following script will connect to a RoboClaw 2x15A Motor Controller,
